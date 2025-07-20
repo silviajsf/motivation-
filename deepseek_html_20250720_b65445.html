@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>For Someone Wonderful</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;700&family=Quicksand:wght@300;500&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Cormorant Garamond', serif;
+            height: 100vh;
+            overflow: hidden;
+            background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
+            color: #fff8f0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            position: relative;
+            touch-action: manipulation;
+            line-height: 1.6;
+        }
+
+        h1 {
+            font-weight: 500;
+            margin-bottom: 1.5rem;
+            opacity: 0;
+            animation: fadeIn 2s ease-in forwards;
+            padding: 0 20px;
+            z-index: 10;
+            pointer-events: none;
+            font-size: 2.2rem;
+            letter-spacing: 0.5px;
+        }
+
+        .subtitle {
+            font-family: 'Quicksand', sans-serif;
+            font-size: 1.2rem;
+            opacity: 0;
+            animation: fadeIn 3s ease-in 0.8s forwards;
+            margin-bottom: 3rem;
+            max-width: 80%;
+            font-weight: 300;
+        }
+
+        @keyframes fadeIn {
+            to { opacity: 1; }
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0) rotate(-2deg); }
+            50% { transform: translateY(-10px) rotate(2deg); }
+        }
+
+        canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+
+        #messageBox {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(255, 248, 240, 0.12);
+            color: #fff8f0;
+            border: 1px solid rgba(255, 248, 240, 0.2);
+            border-radius: 12px;
+            box-shadow: 0 0 25px rgba(255, 248, 240, 0.1);
+            padding: 30px;
+            max-width: 80%;
+            font-size: 1.3rem;
+            text-align: center;
+            opacity: 0;
+            transition: all 0.5s ease;
+            z-index: 100;
+            backdrop-filter: blur(8px);
+            font-weight: 500;
+            line-height: 1.8;
+        }
+
+        #messageBox.show {
+            opacity: 1;
+            animation: float 4s ease-in-out infinite;
+        }
+
+        #controls {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 50;
+            display: flex;
+            gap: 15px;
+        }
+
+        .ctrl-btn {
+            background: rgba(255, 248, 240, 0.1);
+            color: #fff8f0;
+            border: 1px solid rgba(255, 248, 240, 0.3);
+            border-radius: 50px;
+            padding: 12px 25px;
+            font-family: 'Quicksand', sans-serif;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(5px);
+            font-weight: 500;
+        }
+
+        .ctrl-btn:hover {
+            background: rgba(255, 248, 240, 0.2);
+            transform: translateY(-2px);
+        }
+
+        #musicControls {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 200;
+            display: flex;
+            gap: 10px;
+        }
+
+        .music-btn {
+            background: rgba(255, 248, 240, 0.1);
+            color: #fff8f0;
+            border: none;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            backdrop-filter: blur(5px);
+            transition: all 0.3s ease;
+        }
+
+        .music-btn:hover {
+            background: rgba(255, 248, 240, 0.25);
+        }
+
+        @media (max-width: 768px) {
+            h1 { font-size: 1.8rem; }
+            .subtitle { font-size: 1rem; }
+            #messageBox { font-size: 1.1rem; padding: 20px; max-width: 90%; }
+            .ctrl-btn { padding: 10px 20px; font-size: 0.9rem; }
+        }
+    </style>
+</head>
+<body>
+    <h1>For Someone Extraordinary</h1>
+    <div class="subtitle">The stars have something to tell you...</div>
+    
+    <canvas id="starCanvas"></canvas>
+    <div id="messageBox" class="hidden"></div>
+    
+    <div id="controls">
+        <button class="ctrl-btn" id="wisdomBtn">Words of Wisdom</button>
+        <button class="ctrl-btn" id="futureBtn">Future Glimpse</button>
+        <button class="ctrl-btn" id="strengthBtn">Strength Reminder</button>
+    </div>
+    
+    <div id="musicControls">
+        <button class="music-btn" id="playBtn">▶️</button>
+        <button class="music-btn" id="pauseBtn">⏸️</button>
+    </div>
+    
+    <audio id="bgMusic" loop>
+        <source src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3" type="audio/mpeg">
+    </audio>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Canvases
+            const canvas = document.getElementById('starCanvas');
+            const ctx = canvas.getContext('2d');
+            const messageBox = document.getElementById('messageBox');
+            
+            // Music elements
+            const bgMusic = document.getElementById('bgMusic');
+            const playBtn = document.getElementById('playBtn');
+            const pauseBtn = document.getElementById('pauseBtn');
+            
+            // Set canvas size
+            function resizeCanvas() {
+                canvas.width = window.innerWidth;
+                canvas.height = window.innerHeight;
+            }
+            
+            resizeCanvas();
+            window.addEventListener('resize', resizeCanvas);
+            
+            // Message collections
+            const openingPhrases = [
+                "You may not realize it, but...",
+                "The way you keep going...",
+                "Progress isn't always visible, but...",
+                "Sometimes the quietest effort...",
+                "You don't need to have all the answers today..."
+            ];
+            
+            const wisdomMessages = [
+                "You may not realize it, but your perseverance is quietly inspiring everyone around you. The way you handle challenges without fanfare speaks volumes about your character.",
+                "The way you keep going, even when no one is watching, is the truest measure of your strength. This quality will carry you further than any temporary talent ever could.",
+                "Progress isn't always visible, but like roots growing beneath the surface, your efforts are building an unshakable foundation for what's to come. Trust this invisible growth.",
+                "Sometimes the quietest effort leads to the most profound transformations. Your dedication today is writing a story you'll proudly tell tomorrow.",
+                "You don't need to have all the answers today to be exactly where you're meant to be. The questions themselves are shaping your unique path forward."
+            ];
+            
+            const futureMessages = [
+                "I see someone who turns obstacles into opportunities without even realizing it. Your future holds moments where this skill will shine brightly.",
+                "The talents you're cultivating now will combine in unexpected ways to create opportunities you can't yet imagine. Keep nurturing them all.",
+                "There will come a day when you'll look back at this moment and understand exactly why you needed to go through this experience.",
+                "Your ability to adapt is preparing you for something wonderful - a chance that will fit you perfectly because of all you're learning now.",
+                "The world needs thoughtful people like you. What feels like uncertainty today is actually you growing into someone who will make important differences."
+            ];
+            
+            const strengthMessages = [
+                "Remember: Growth often feels uncomfortable while it's happening. What you're experiencing isn't a setback - it's your capacity expanding.",
+                "Your worth isn't determined by productivity. The simple act of showing up as yourself matters more than you know.",
+                "The qualities you sometimes doubt in yourself are often the very ones others admire most about you. Your perspective is valuable.",
+                "You're allowed to be both a work in progress and absolutely enough exactly as you are today. These truths aren't contradictory.",
+                "When you feel overwhelmed, remember how many times you've navigated uncertainty before. That track record speaks for itself."
+            ];
+            
+            // Star class
+            class Star {
+                constructor() {
+                    this.x = Math.random() * canvas.width;
+                    this.y = Math.random() * canvas.height;
+                    this.size = Math.random() * 1.8 + 0.7;
+                    this.blinkSpeed = Math.random() * 0.04 + 0.01;
+                    this.opacity = Math.random();
+                    this.increasing = true;
+                    this.radius = 25;
+                    this.color = `rgba(255, 248, 240, `;
+                }
+                
+                update() {
+                    if (this.increasing) {
+                        this.opacity += this.blinkSpeed;
+                        if (this.opacity >= 1) this.increasing = false;
+                    } else {
+                        this.opacity -= this.blinkSpeed;
+                        if (this.opacity <= 0.4) this.increasing = true;
+                    }
+                }
+                
+                draw() {
+                    ctx.beginPath();
+                    ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                    ctx.fillStyle = this.color + this.opacity + ")";
+                    ctx.fill();
+                    
+                    // Add glow
+                    ctx.shadowBlur = 8;
+                    ctx.shadowColor = this.color + "0.8)";
+                }
+                
+                isClicked(x, y) {
+                    const distance = Math.sqrt((x - this.x) ** 2 + (y - this.y) ** 2);
+                    return distance <= this.radius;
+                }
+            }
+            
+            // Create stars
+            const stars = [];
+            const starCount = Math.floor(Math.random() * 31) + 50; // 50-80 stars
+            
+            for (let i = 0; i < starCount; i++) {
+                stars.push(new Star());
+            }
+            
+            // Animation loop
+            function animate() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                ctx.shadowBlur = 0;
+                
+                stars.forEach(star => {
+                    star.update();
+                    star.draw();
+                });
+                
+                requestAnimationFrame(animate);
+            }
+            
+            animate();
+            
+            // Handle interactions
+            function handleInteraction(x, y) {
+                // Check if clicked on a star
+                for (const star of stars) {
+                    if (star.isClicked(x, y)) {
+                        showMessage(
+                            openingPhrases[Math.floor(Math.random() * openingPhrases.length)],
+                            wisdomMessages[Math.floor(Math.random() * wisdomMessages.length)]
+                        );
+                        return;
+                    }
+                }
+                
+                // Click outside - hide message
+                messageBox.classList.remove('show');
+            }
+            
+            // Show message with opening phrase and main message
+            function showMessage(opening, mainMessage) {
+                messageBox.innerHTML = `
+                    <div style="font-style: italic; margin-bottom: 15px;">${opening}</div>
+                    <div>${mainMessage}</div>
+                `;
+                messageBox.classList.add('show');
+                
+                // Auto-hide after 8 seconds
+                setTimeout(() => {
+                    messageBox.classList.remove('show');
+                }, 8000);
+            }
+            
+            // Mouse click event
+            canvas.addEventListener('click', function(e) {
+                const rect = canvas.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+                handleInteraction(x, y);
+            });
+            
+            // Touch event for mobile
+            canvas.addEventListener('touchstart', function(e) {
+                e.preventDefault();
+                const rect = canvas.getBoundingClientRect();
+                const touch = e.touches[0];
+                const x = touch.clientX - rect.left;
+                const y = touch.clientY - rect.top;
+                handleInteraction(x, y);
+            }, { passive: false });
+            
+            // Button event listeners
+            document.getElementById('wisdomBtn').addEventListener('click', () => {
+                showMessage(
+                    openingPhrases[Math.floor(Math.random() * openingPhrases.length)],
+                    wisdomMessages[Math.floor(Math.random() * wisdomMessages.length)]
+                );
+            });
+            
+            document.getElementById('futureBtn').addEventListener('click', () => {
+                showMessage(
+                    "Looking ahead...",
+                    futureMessages[Math.floor(Math.random() * futureMessages.length)]
+                );
+            });
+            
+            document.getElementById('strengthBtn').addEventListener('click', () => {
+                showMessage(
+                    "Remember this...",
+                    strengthMessages[Math.floor(Math.random() * strengthMessages.length)]
+                );
+            });
+            
+            // Music controls
+            playBtn.addEventListener('click', () => {
+                bgMusic.play();
+            });
+            
+            pauseBtn.addEventListener('click', () => {
+                bgMusic.pause();
+            });
+            
+            // Start music on first interaction
+            function initMusic() {
+                bgMusic.volume = 0.3;
+                document.body.removeEventListener('click', initMusic);
+                document.body.removeEventListener('touchstart', initMusic);
+            }
+            
+            document.body.addEventListener('click', initMusic, { once: true });
+            document.body.addEventListener('touchstart', initMusic, { once: true });
+        });
+    </script>
+</body>
+</html>
